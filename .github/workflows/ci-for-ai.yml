@@ -36,7 +36,7 @@ jobs:
       - name: Check for existing test comment
         id: check-existing
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_AUTOMATION_TOKEN }}
         run: |
           PR_NUMBER=1
           
@@ -70,7 +70,7 @@ jobs:
         id: create-comment
         if: steps.check-existing.outputs.existing-comment == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_AUTOMATION_TOKEN }}
         run: |
           PR_NUMBER=1
           
