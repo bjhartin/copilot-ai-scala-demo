@@ -1,4 +1,4 @@
-name: CI/AI Validation
+name: CI for AI
 
 # This workflow tests Copilot's development practices by:
 # 1. Creating comments on PRs to trigger Copilot sessions
