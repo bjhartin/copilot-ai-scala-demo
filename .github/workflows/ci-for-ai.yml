@@ -1,0 +1,103 @@
+name: CI/AI Validation
+
+# This workflow tests Copilot's development practices by:
+# 1. Creating comments on PRs to trigger Copilot sessions
+# 2. Validating that proper development practices are followed
+# 3. Supporting both reusable PR (default) and fresh PR modes
+#
+# Fresh PR Mode: Prevents context contamination by creating isolated test PRs
+# Reusable PR Mode: Uses PR #327 for operational simplicity
+
+on:
+  schedule:
+    # Daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  create-test-comment:
+    # Only create comment on schedule or manual dispatch without comment_id
+    runs-on: ubuntu-latest
+    outputs:
+      comment-id: ${{ steps.create-comment.outputs.comment-id || steps.set-output.outputs.comment-id }}
+      comment-created: ${{ steps.create-comment.outputs.comment-id != '' && steps.create-comment.outputs.comment-id != null }}
+      pr-number: ${{ steps.set-pr.outputs.pr-number }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for existing test comment
+        id: check-existing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=1
+          
+          # Check if there's already a recent comment from this workflow (within last 4 hours)
+          FOUR_HOURS_AGO=$(date -u -d '4 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          
+          EXISTING_COMMENTS=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments?since=$FOUR_HOURS_AGO")
+          
+          # Check if any comment contains the copilot request text
+          COPILOT_COMMENT_COUNT=$(echo "$EXISTING_COMMENTS" | jq '[.[] | select(.body | contains("@copilot please create a new feature"))] | length')
+          
+          if [ "$COPILOT_COMMENT_COUNT" -gt 0 ]; then
+            echo "❌ Found $COPILOT_COMMENT_COUNT existing copilot test comment(s) in the last 4 hours. Skipping creation."
+            echo "existing-comment=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No existing copilot test comments found in the last 4 hours. Proceeding with creation."
+            echo "existing-comment=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set output for skipped comment creation
+        id: set-output
+        if: steps.check-existing.outputs.existing-comment == 'true' || steps.check-main.outputs.main-ci-failing == 'true'
+        run: |
+          echo "Comment creation was skipped"
+          echo "comment-id=" >> $GITHUB_OUTPUT
+
+      - name: Create CI/AI test comment
+        id: create-comment
+        if: steps.check-existing.outputs.existing-comment == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=1
+          
+          COMMENT_BODY="@copilot please create a new feature to support an "--about" argument which will print the following text \"This application is a demonstration of Github copilot practices\"."
+
+          # Create the comment using proper JSON formatting with jq
+          COMMENT_PAYLOAD=$(jq -n \
+            --arg body "$COMMENT_BODY" \
+            '{
+              body: $body
+            }')
+
+          COMMENT_RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
+            -d "$COMMENT_PAYLOAD")
+
+          COMMENT_ID=$(echo "$COMMENT_RESPONSE" | jq -r '.id')
+          
+          # Check if comment creation was successful
+          if [ "$COMMENT_ID" = "null" ] || [ -z "$COMMENT_ID" ]; then
+            echo "❌ Failed to create comment. API response:"
+            echo "$COMMENT_RESPONSE"
+            exit 1
+          fi
+          
+          echo "✅ Created comment #$COMMENT_ID on PR #$PR_NUMBER"
+          echo "comment-id=$COMMENT_ID" >> $GITHUB_OUTPUT
