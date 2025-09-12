@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Development CLI wrapper script
+# This script builds and runs the dev-cli application
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Check if dev-cli.jar exists, if not build it
+if [ ! -f "dev-cli/target/scala-2.13/dev-cli.jar" ]; then
+    echo "Building dev-cli..."
+    export PATH="$SCRIPT_DIR/sbt/bin:$PATH"
+    sbt devCli/assembly
+fi
+
+# Run the dev-cli with all arguments passed through
+java -jar dev-cli/target/scala-2.13/dev-cli.jar "$@"

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot AI Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        .section {
+            margin: 2rem 0;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .command {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 Copilot AI Demo</h1>
+        <p>A Scala project demonstrating SBT, cats-effect, FS2, and property-based testing</p>
+    </div>
+
+    <div class="section">
+        <h2>🚀 Quick Start</h2>
+        <p>Get started with the development environment:</p>
+        <pre class="command">
+# Source the development environment
+source dev.env
+
+# Run the hello-world application
+dev run "Copilot"
+
+# Build all projects
+dev build
+
+# Run tests
+dev test
+        </pre>
+    </div>
+
+    <div class="section">
+        <h2>📁 Project Structure</h2>
+        <ul>
+            <li><strong>hello-world/</strong> - A simple greeting application using cats-effect and FS2</li>
+            <li><strong>dev-cli/</strong> - Development CLI tool for running common tasks</li>
+            <li><strong>dev.env</strong> - Shell environment setup script</li>
+            <li><strong>dev</strong> - Wrapper script for the dev-cli tool</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🧪 Testing</h2>
+        <p>This project uses ScalaCheck for property-based testing. Tests are automatically run on:</p>
+        <ul>
+            <li>Pull requests (via GitHub Actions)</li>
+            <li>Main branch pushes (with packaging)</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🔧 Development Commands</h2>
+        <p>Available after sourcing <code>dev.env</code>:</p>
+        <ul>
+            <li><code>dev run [name]</code> - Run hello-world with optional name</li>
+            <li><code>dev build</code> - Compile all projects</li>
+            <li><code>dev test</code> - Run all tests</li>
+            <li><code>sbt</code> - Access SBT directly</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>📚 Technologies Used</h2>
+        <ul>
+            <li><strong>Scala 2.13</strong> - Programming language</li>
+            <li><strong>SBT</strong> - Build tool and dependency management</li>
+            <li><strong>cats-effect</strong> - Functional effects library</li>
+            <li><strong>FS2</strong> - Functional streaming</li>
+            <li><strong>ScalaCheck</strong> - Property-based testing</li>
+            <li><strong>decline</strong> - Command-line argument parsing</li>
+        </ul>
+    </div>
+</body>
+</html>
