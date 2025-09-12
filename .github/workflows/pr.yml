@@ -1,0 +1,40 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'corretto'
+        java-version: '21'
+        
+    - name: Cache SBT
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.sbt
+          ~/.ivy2/cache
+          ~/.coursier/cache
+        key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', 'project/build.properties') }}
+        restore-keys: ${{ runner.os }}-sbt-
+        
+    - name: Setup SBT
+      run: |
+        curl -fL https://github.com/sbt/sbt/releases/download/v1.9.6/sbt-1.9.6.tgz | tar xz
+        echo "$PWD/sbt/bin" >> $GITHUB_PATH
+        
+    - name: Compile code
+      run: sbt compile
+      
+    - name: Run tests
+      run: sbt test

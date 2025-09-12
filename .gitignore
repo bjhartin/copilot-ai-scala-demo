@@ -1,0 +1,26 @@
+*.class
+*.log
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# SBT specific
+.bsp/
+target/
+project/target/
+project/project/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local SBT installation and temporary files
+sbt/
+sbt-*.tgz
+cs
+
+# OS specific
+.DS_Store
+Thumbs.db
