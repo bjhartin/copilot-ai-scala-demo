@@ -1,4 +1,4 @@
-# copilot-ai-demo
+# copilot-ai-scala-demo
 
 🤖 A demonstration of GitHub Copilot agents with a complete Scala development environment.
 
