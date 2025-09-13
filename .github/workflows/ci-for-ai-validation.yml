@@ -1,7 +1,8 @@
 name: CI-for-AI Validation
 
 # This workflow validates that Copilot sessions follow established rules and practices
-# It examines the latest Copilot session on PR #3 and checks for compliance
+# It examines both Copilot workflow logs (process) and PR content (output) for compliance
+# Enhanced to scan actual Copilot session logs for evidence of reading instructions
 
 on:
   workflow_dispatch:
