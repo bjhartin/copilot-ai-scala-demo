@@ -19,5 +19,9 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
     "should handle multiple arguments (taking the first)" in {
       Main.run(List("first", "second")).asserting(_ shouldBe cats.effect.ExitCode.Success)
     }
+    
+    "should handle --about flag" in {
+      Main.run(List("--about")).asserting(_ shouldBe cats.effect.ExitCode.Success)
+    }
   }
 }
