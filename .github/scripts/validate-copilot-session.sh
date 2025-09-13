@@ -144,12 +144,28 @@ validate_instructions_read() {
     
     # First check the workflow logs for direct evidence
     local workflow_evidence=0
+    local workflow_run_url=""
     if [ -s "$WORKFLOW_LOGS" ]; then
         echo "   🔍 Scanning workflow logs for instruction-reading evidence..."
         
+        # Extract workflow run info for URL construction
+        local run_id=$(grep "Run.*ID:" "$WORKFLOW_LOGS" | head -1 | sed 's/.*ID: \([0-9]*\).*/\1/')
+        if [ -n "$run_id" ]; then
+            workflow_run_url="https://github.com/${REPO_OWNER}/${REPO_NAME}/actions/runs/${run_id}"
+        fi
+        
         # Look for direct mentions of reading instructions
-        if grep -i -E "(\.copilot-instructions|copilot.*instructions|reading.*instructions)" "$WORKFLOW_LOGS" > /dev/null 2>&1; then
-            echo "   ✓ Found direct reference to reading Copilot instructions in workflow logs"
+        local instruction_matches=$(grep -i -n -E "(\.copilot-instructions|copilot.*instructions|reading.*instructions)" "$WORKFLOW_LOGS" 2>/dev/null || true)
+        if [ -n "$instruction_matches" ]; then
+            echo "   ✓ Found direct reference to reading Copilot instructions in workflow logs:"
+            echo "$instruction_matches" | while IFS= read -r line; do
+                local line_num=$(echo "$line" | cut -d: -f1)
+                local content=$(echo "$line" | cut -d: -f2- | xargs)
+                echo "     > Line $line_num: $content"
+                if [ -n "$workflow_run_url" ]; then
+                    echo "     > Source: $workflow_run_url"
+                fi
+            done
             ((workflow_evidence++))
         fi
         
@@ -165,15 +181,33 @@ validate_instructions_read() {
         )
         
         for pattern in "${instruction_patterns[@]}"; do
-            if grep -i -E "$pattern" "$WORKFLOW_LOGS" > /dev/null 2>&1; then
+            local pattern_matches=$(grep -i -n -E "$pattern" "$WORKFLOW_LOGS" 2>/dev/null || true)
+            if [ -n "$pattern_matches" ]; then
                 echo "   ✓ Found evidence of following instruction pattern: $pattern"
+                echo "$pattern_matches" | head -3 | while IFS= read -r line; do
+                    local line_num=$(echo "$line" | cut -d: -f1)
+                    local content=$(echo "$line" | cut -d: -f2- | xargs)
+                    echo "     > Line $line_num: $content"
+                done
+                if [ -n "$workflow_run_url" ]; then
+                    echo "     > Source: $workflow_run_url"
+                fi
                 ((workflow_evidence++))
             fi
         done
         
         # Check for evidence of reading the actual instruction file
-        if grep -i -E "\.github/\.copilot-instructions\.md|copilot-instructions\.md" "$WORKFLOW_LOGS" > /dev/null 2>&1; then
-            echo "   ✓ Found evidence of accessing .copilot-instructions.md file"
+        local file_access_matches=$(grep -i -n -E "\.github/\.copilot-instructions\.md|copilot-instructions\.md" "$WORKFLOW_LOGS" 2>/dev/null || true)
+        if [ -n "$file_access_matches" ]; then
+            echo "   ✓ Found evidence of accessing .copilot-instructions.md file:"
+            echo "$file_access_matches" | head -5 | while IFS= read -r line; do
+                local line_num=$(echo "$line" | cut -d: -f1)
+                local content=$(echo "$line" | cut -d: -f2- | xargs)
+                echo "     > Line $line_num: $content"
+            done
+            if [ -n "$workflow_run_url" ]; then
+                echo "     > Source: $workflow_run_url"
+            fi
             ((workflow_evidence += 2))  # This is strong evidence
         fi
     else
@@ -181,6 +215,7 @@ validate_instructions_read() {
     fi
     
     # Also check for evidence of following FP principles from instructions in PR content
+    echo "   🔍 Scanning PR content for evidence of following instructions..."
     local fp_patterns=(
         "cats"
         "IO"
@@ -193,27 +228,56 @@ validate_instructions_read() {
     )
     
     local found_patterns=0
+    local pr_url="https://github.com/${REPO_OWNER}/${REPO_NAME}/pull/${PR_NUMBER}"
+    
     for pattern in "${fp_patterns[@]}"; do
-        if grep -i -E "$pattern" "$ALL_CONTENT" > /dev/null 2>&1; then
+        local content_matches=$(grep -i -n -E "$pattern" "$ALL_CONTENT" 2>/dev/null || true)
+        if [ -n "$content_matches" ]; then
             echo "   ✓ Found evidence of: $pattern"
+            echo "$content_matches" | head -2 | while IFS= read -r line; do
+                local line_num=$(echo "$line" | cut -d: -f1)
+                local content=$(echo "$line" | cut -d: -f2- | xargs | head -c 100)
+                echo "     > Line $line_num: $content..."
+                echo "     > Source: $pr_url"
+            done
             ((found_patterns++))
         fi
     done
     
     # Also check for imports that indicate following the style guide
-    if grep -E "import cats\.syntax\.all\._|cats\.effect\.IO|fs2\." "$ALL_CONTENT" > /dev/null 2>&1; then
-        echo "   ✓ Found proper imports following instructions"
+    local import_matches=$(grep -n -E "import cats\.syntax\.all\._|cats\.effect\.IO|fs2\." "$ALL_CONTENT" 2>/dev/null || true)
+    if [ -n "$import_matches" ]; then
+        echo "   ✓ Found proper imports following instructions:"
+        echo "$import_matches" | head -3 | while IFS= read -r line; do
+            local line_num=$(echo "$line" | cut -d: -f1)
+            local content=$(echo "$line" | cut -d: -f2- | xargs)
+            echo "     > Line $line_num: $content"
+            echo "     > Source: $pr_url"
+        done
         ((found_patterns++))
     fi
     
     # Check for test-driven development patterns
-    if grep -i -E "test.*before.*implement|property.*test|ScalaCheck" "$ALL_CONTENT" > /dev/null 2>&1; then
-        echo "   ✓ Found evidence of test-driven development"
+    local tdd_matches=$(grep -i -n -E "test.*before.*implement|property.*test|ScalaCheck" "$ALL_CONTENT" 2>/dev/null || true)
+    if [ -n "$tdd_matches" ]; then
+        echo "   ✓ Found evidence of test-driven development:"
+        echo "$tdd_matches" | head -2 | while IFS= read -r line; do
+            local line_num=$(echo "$line" | cut -d: -f1)
+            local content=$(echo "$line" | cut -d: -f2- | xargs | head -c 100)
+            echo "     > Line $line_num: $content..."
+            echo "     > Source: $pr_url"
+        done
         ((found_patterns++))
     fi
     
     # Combine evidence from workflow logs and PR content
     local total_evidence=$((workflow_evidence + found_patterns))
+    
+    echo ""
+    echo "📊 Evidence Summary:"
+    echo "   • Workflow log evidence: $workflow_evidence patterns found"
+    echo "   • PR content evidence: $found_patterns patterns found"
+    echo "   • Total evidence score: $total_evidence"
     
     if [ $workflow_evidence -ge 2 ]; then
         echo "   🎉 STRONG PASS: Found strong evidence in workflow logs that Copilot read instructions ($workflow_evidence patterns)"
@@ -224,6 +288,7 @@ validate_instructions_read() {
     else
         echo "   ❌ FAIL: Insufficient evidence Copilot read instructions (workflow: $workflow_evidence, content: $found_patterns patterns found)"
         echo "   💡 Expected to find evidence in workflow logs of reading .github/.copilot-instructions.md"
+        echo "   💡 Or at least 3 total patterns across workflow logs and PR content"
         return 1
     fi
 }
