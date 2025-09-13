@@ -24,11 +24,7 @@ jobs:
   create-test-comment:
     # Only create comment on schedule or manual dispatch without comment_id
     runs-on: ubuntu-latest
-    outputs:
-      comment-id: ${{ steps.create-comment.outputs.comment-id || steps.set-output.outputs.comment-id }}
-      comment-created: ${{ steps.create-comment.outputs.comment-id != '' && steps.create-comment.outputs.comment-id != null }}
-      pr-number: ${{ steps.set-pr.outputs.pr-number }}
-    
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
