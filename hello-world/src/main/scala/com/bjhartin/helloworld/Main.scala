@@ -16,6 +16,31 @@ object Main extends IOApp {
           .through(stdout[IO])
         aboutStream.compile.drain.as(ExitCode.Success)
         
+      case Some("--help") =>
+        val helpText = 
+          """Usage: sbt "helloWorld/run [OPTION|NAME]"
+            |
+            |A simple hello world application with command-line options.
+            |
+            |Arguments:
+            |  NAME           Print "Hello, NAME!"
+            |
+            |Options:
+            |  --about        Show information about this repository
+            |  --help         Show this help message
+            |
+            |Examples:
+            |  sbt "helloWorld/run"           # Output: Hello, World!
+            |  sbt "helloWorld/run Alice"     # Output: Hello, Alice!
+            |  sbt "helloWorld/run --about"   # Show repository information
+            |  sbt "helloWorld/run --help"    # Show this help message
+            |""".stripMargin
+        val helpStream = Stream
+          .emit(helpText)
+          .through(text.utf8.encode)
+          .through(stdout[IO])
+        helpStream.compile.drain.as(ExitCode.Success)
+        
       case _ =>
         val greeting = args.headOption.getOrElse("World")
         val helloStream = Stream

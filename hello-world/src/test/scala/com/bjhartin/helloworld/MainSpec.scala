@@ -23,5 +23,9 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
     "should handle --about flag" in {
       Main.run(List("--about")).asserting(_ shouldBe cats.effect.ExitCode.Success)
     }
+    
+    "should handle --help flag" in {
+      Main.run(List("--help")).asserting(_ shouldBe cats.effect.ExitCode.Success)
+    }
   }
 }
