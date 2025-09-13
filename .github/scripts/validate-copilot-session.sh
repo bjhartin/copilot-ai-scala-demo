@@ -87,7 +87,18 @@ validate_instructions_read() {
     fi
 }
 
-# Add more validation functions here as needed
+# EXAMPLE: Add more validation functions here as needed
+# validate_custom_rule() {
+#     echo "✅ Checking custom rule..."
+#     if grep -i "your-pattern" "$ALL_CONTENT" > /dev/null 2>&1; then
+#         echo "   ✓ Found evidence of your custom rule"
+#         return 0
+#     else
+#         echo "   ❌ FAIL: Custom rule not followed"
+#         return 1
+#     fi
+# }
+
 validate_proper_development_practices() {
     echo "✅ Checking proper development practices..."
     
@@ -123,6 +134,11 @@ run_validations() {
     
     # Additional validations (non-failing for now)
     validate_proper_development_practices
+    
+    # EXAMPLE: Uncomment and modify to add new validation
+    # if ! validate_custom_rule; then
+    #     exit_code=1
+    # fi
     
     echo "================================"
     
