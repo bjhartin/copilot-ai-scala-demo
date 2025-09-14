@@ -28,18 +28,27 @@ object Main extends IOApp {
             |Options:
             |  --about        Show information about this repository
             |  --help         Show this help message
+            |  --quote-1      Display an inspiring famous quote
             |
             |Examples:
             |  sbt "helloWorld/run"           # Output: Hello, World!
             |  sbt "helloWorld/run Alice"     # Output: Hello, Alice!
             |  sbt "helloWorld/run --about"   # Show repository information
             |  sbt "helloWorld/run --help"    # Show this help message
+            |  sbt "helloWorld/run --quote-1" # Display a famous quote
             |""".stripMargin
         val helpStream = Stream
           .emit(helpText)
           .through(text.utf8.encode)
           .through(stdout[IO])
         helpStream.compile.drain.as(ExitCode.Success)
+        
+      case Some("--quote-1") =>
+        val quoteStream = Stream
+          .emit("\"The only way to do great work is to love what you do.\" - Steve Jobs")
+          .through(text.utf8.encode)
+          .through(stdout[IO])
+        quoteStream.compile.drain.as(ExitCode.Success)
         
       case _ =>
         val greeting = args.headOption.getOrElse("World")
