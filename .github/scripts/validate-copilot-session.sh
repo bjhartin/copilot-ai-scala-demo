@@ -133,6 +133,26 @@ validate_instructions_read() {
             workflow_run_url="https://github.com/${REPO_OWNER}/${REPO_NAME}/actions/runs/${run_id}"
         fi
         
+        # Look for the required acknowledgment first
+        echo "   🔍 Looking for explicit acknowledgment of reading instructions..."
+        local acknowledgment_matches=$(grep -i -n -E "(I have read.*understood.*copilot.*instructions|✓.*read.*understood.*guidelines)" "$WORKFLOW_LOGS" 2>/dev/null || true)
+        if [ -n "$acknowledgment_matches" ]; then
+            echo "   ✓ Found explicit acknowledgment of reading Copilot instructions:"
+            echo "$acknowledgment_matches" | head -3 | while IFS= read -r line; do
+                if [ -n "$line" ]; then
+                    local line_num=$(echo "$line" | cut -d: -f1)
+                    local content=$(echo "$line" | cut -d: -f2-)
+                    # Trim whitespace without xargs to avoid errors
+                    content=$(echo "$content" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                    echo "     > Line $line_num: $content"
+                    if [ -n "$workflow_run_url" ]; then
+                        echo "     > Source: $workflow_run_url"
+                    fi
+                fi
+            done
+            ((workflow_evidence += 3))  # Strong evidence - explicit acknowledgment
+        fi
+        
         # Look for direct mentions of reading instructions with enhanced detail
         echo "   🔍 Looking for direct mentions of reading .copilot-instructions.md..."
         local instruction_matches=$(grep -i -n -E "(\.copilot-instructions|copilot.*instructions|reading.*instructions)" "$WORKFLOW_LOGS" 2>/dev/null || true)
@@ -159,6 +179,52 @@ validate_instructions_read() {
         if [ -n "$file_access_matches" ]; then
             echo "   ✓ Found evidence of accessing .copilot-instructions.md file:"
             echo "$file_access_matches" | head -5 | while IFS= read -r line; do
+                if [ -n "$line" ]; then
+                    local line_num=$(echo "$line" | cut -d: -f1)
+                    local content=$(echo "$line" | cut -d: -f2-)
+                    # Trim whitespace without xargs to avoid errors
+                    content=$(echo "$content" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                    echo "     > Line $line_num: $content"
+                    if [ -n "$workflow_run_url" ]; then
+                        echo "     > Source: $workflow_run_url"
+                    fi
+                fi
+            done
+            ((workflow_evidence += 2))  # This is strong evidence
+        fi
+        
+        # Also check for tool call pattern specifically (multiline aware)
+        echo "   🔍 Looking for str_replace_editor tool calls to .copilot-instructions.md..."
+        local tool_call_matches=$(awk '
+            /str_replace_editor/ { 
+                in_tool_call = 1; 
+                line_start = NR; 
+                buffer = $0; 
+                next; 
+            } 
+            in_tool_call && /copilot.*instructions\.md/ { 
+                print line_start ":" buffer; 
+                print NR ":" $0; 
+                in_tool_call = 0; 
+                next; 
+            } 
+            in_tool_call && /path:.*copilot.*instructions/ { 
+                print line_start ":" buffer; 
+                print NR ":" $0; 
+                in_tool_call = 0; 
+                next; 
+            } 
+            in_tool_call { 
+                buffer = buffer "\n" $0; 
+            } 
+            !/^[[:space:]]*/ { 
+                in_tool_call = 0; 
+            }
+        ' "$WORKFLOW_LOGS" 2>/dev/null || true)
+        
+        if [ -n "$tool_call_matches" ]; then
+            echo "   ✓ Found str_replace_editor tool call accessing .copilot-instructions.md:"
+            echo "$tool_call_matches" | head -5 | while IFS= read -r line; do
                 if [ -n "$line" ]; then
                     local line_num=$(echo "$line" | cut -d: -f1)
                     local content=$(echo "$line" | cut -d: -f2-)
