@@ -3,6 +3,10 @@ name: Push to Main
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
+      - '.github/workflows/**'
+      - 'docs/**'
 
 jobs:
   test-and-package:
