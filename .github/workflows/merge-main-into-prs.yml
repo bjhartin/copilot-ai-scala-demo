@@ -1,0 +1,40 @@
+name: Sync PRs with Main
+on:
+  workflow_run:
+    workflows: ["Build and Deploy"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update all open PRs with main after successful deployment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner, repo,
+              state: 'open',
+              base: 'main',
+              per_page: 100,
+            });
+            for (const pr of prs) {
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner, repo,
+                  pull_number: pr.number,
+                });
+                core.info(`Updated PR #${pr.number} (${pr.head.label}) with ${pr.base.ref} after successful deployment`);
+              } catch (e) {
+                core.warning(`Skipped PR #${pr.number}: ${e.message}`);
+              }
+            }
