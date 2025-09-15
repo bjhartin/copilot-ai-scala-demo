@@ -93,3 +93,4 @@ sbt devCli/test
 ```
 
 Property-based tests use ScalaCheck to validate behavior across many generated inputs.
+
