@@ -86,6 +86,13 @@ object Main extends IOApp {
           .through(stdout[IO])
         quoteStream.compile.drain.as(ExitCode.Success)
         
+      case Some("--quote-6") =>
+        val quoteStream = Stream
+          .emit("\"Life is what happens when you're busy making other plans.\" - John Lennon")
+          .through(text.utf8.encode)
+          .through(stdout[IO])
+        quoteStream.compile.drain.as(ExitCode.Success)
+        
       case _ =>
         val greeting = args.headOption.getOrElse("World")
         val helloStream = Stream
