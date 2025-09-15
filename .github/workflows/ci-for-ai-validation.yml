@@ -39,15 +39,3 @@ jobs:
           
           # Run the validation script
           .github/scripts/validate-copilot-session.sh "$PR_NUMBER" "${{ github.repository_owner }}" "${{ github.event.repository.name }}"
-
-      - name: Validation Summary
-        if: always()
-        run: |
-          echo "📊 Validation Summary"
-          echo "===================="
-          if [ $? -eq 0 ]; then
-            echo "✅ All validations passed - Copilot is following the established rules!"
-          else
-            echo "❌ Some validations failed - Copilot may not be following all rules"
-            exit 1
-          fi
