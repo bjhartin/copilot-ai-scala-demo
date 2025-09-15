@@ -12,6 +12,9 @@ on:
         required: false
         default: '3'
         type: string
+  schedule:
+    # Daily at 08:00 UTC
+    - cron: '0 8 * * *'        
 
 permissions:
   contents: read
