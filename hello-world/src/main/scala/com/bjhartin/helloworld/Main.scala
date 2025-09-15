@@ -29,6 +29,7 @@ object Main extends IOApp {
             |  --about        Show information about this repository
             |  --help         Show this help message
             |  --quote-1      Display an inspiring famous quote
+            |  --quote-2      Display another inspiring famous quote
             |
             |Examples:
             |  sbt "helloWorld/run"           # Output: Hello, World!
@@ -36,6 +37,7 @@ object Main extends IOApp {
             |  sbt "helloWorld/run --about"   # Show repository information
             |  sbt "helloWorld/run --help"    # Show this help message
             |  sbt "helloWorld/run --quote-1" # Display a famous quote
+            |  sbt "helloWorld/run --quote-2" # Display another famous quote
             |""".stripMargin
         val helpStream = Stream
           .emit(helpText)
@@ -46,6 +48,13 @@ object Main extends IOApp {
       case Some("--quote-1") =>
         val quoteStream = Stream
           .emit("\"The only way to do great work is to love what you do.\" - Steve Jobs")
+          .through(text.utf8.encode)
+          .through(stdout[IO])
+        quoteStream.compile.drain.as(ExitCode.Success)
+        
+      case Some("--quote-2") =>
+        val quoteStream = Stream
+          .emit("\"Innovation distinguishes between a leader and a follower.\" - Steve Jobs")
           .through(text.utf8.encode)
           .through(stdout[IO])
         quoteStream.compile.drain.as(ExitCode.Success)
