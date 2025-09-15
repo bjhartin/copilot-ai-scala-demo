@@ -33,6 +33,7 @@ object Main extends IOApp {
             |  --quote-3      Display yet another inspiring famous quote
             |  --quote-4      Display yet another inspiring famous quote
             |  --quote-5      Display yet another inspiring famous quote
+            |  --quote-6      Display yet another inspiring famous quote
             |
             |Examples:
             |  sbt "helloWorld/run"           # Output: Hello, World!
@@ -44,6 +45,7 @@ object Main extends IOApp {
             |  sbt "helloWorld/run --quote-3" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-4" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-5" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-6" # Display yet another famous quote
             |""".stripMargin
         val helpStream = Stream
           .emit(helpText)
