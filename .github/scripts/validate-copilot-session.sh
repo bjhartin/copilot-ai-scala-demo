@@ -109,41 +109,25 @@ fetch_copilot_workflow_logs
 validate_instructions_read() {
     echo "🔍 Checking if Copilot read .github/.copilot-instructions.md..."
     
-    # Only check the workflow logs for evidence - PR content checks disabled per user request
-    local workflow_evidence=0
-    if [ -s "$WORKFLOW_LOGS" ]; then
-        # Look for the required acknowledgment first
-        local acknowledgment_matches=$(grep -i -n -E "(I have read.*understood.*copilot.*instructions)" "$WORKFLOW_LOGS" 2>/dev/null || true)
-        if [ -n "$acknowledgment_matches" ]; then
-            ((workflow_evidence = 1))  # Strong evidence - explicit acknowledgment
-        fi
-    else
-        echo "   ⚠️  No workflow logs available for analysis"
-    fi
-    
-    echo ""
-    echo "📊 Evidence Summary (Workflow Logs Only):"
-    
-    if [ $workflow_evidence == 1 ]; then
-        echo "   ✅ PASS: Found acknowledgement that Copilot read instructions"
+    if grep -i -P "^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z copilot: ✓ I have read and understood the .github/.copilot-instructions.md guidelines and will follow them.$" "$WORKFLOW_LOGS" > /dev/null 2>&1; then
+        echo "   ✅ PASS"
         return 0
     else
-        echo "   ❌ FAIL: Insufficient evidence Copilot read instructions"
+        echo "   ❌ FAIL"
         return 1
     fi
 }
 
-# EXAMPLE: Add more validation functions here as needed
-# validate_custom_rule() {
-#     echo "✅ Checking custom rule..."
-#     if grep -i "your-pattern" "$ALL_CONTENT" > /dev/null 2>&1; then
-#         echo "   ✓ Found evidence of your custom rule"
-#         return 0
-#     else
-#         echo "   ❌ FAIL: Custom rule not followed"
-#         return 1
-#     fi
-# }
+ validate_environment_setup() {
+     echo "🔍 Checking if development environment was set up"
+     if grep -i -P "^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z Copilot development environment set up successfully\.$" "$WORKFLOW_LOGS" > /dev/null 2>&1; then
+         echo "   ✅ PASS"
+         return 0
+     else
+         echo "   ❌ FAIL"
+         return 1
+     fi
+ }
 
 # Main validation runner
 run_validations() {
@@ -154,13 +138,13 @@ run_validations() {
         exit_code=1
     fi
     
-    # EXAMPLE: Uncomment and modify to add new validation
-    # if ! validate_custom_rule; then
-    #     exit_code=1
-    # fi
+    if ! validate_environment_setup; then
+        exit_code=1
+     fi
     
     # Cleanup
-    rm -rf "$TEMP_DIR"
+    #rm -rf "$TEMP_DIR"
+    echo "Logs are in $TEMP_DIR"
     
     return $exit_code
 }
