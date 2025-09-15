@@ -11,8 +11,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  update:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  update:    
     runs-on: ubuntu-latest
     steps:
       - name: Update all open PRs with main after successful deployment
