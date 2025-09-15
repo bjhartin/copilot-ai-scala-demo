@@ -1,0 +1,53 @@
+name: CI-for-AI Validation
+
+# This workflow validates that Copilot sessions follow established rules and practices
+# It examines both Copilot workflow logs (process) and PR content (output) for compliance
+# Enhanced to scan actual Copilot session logs for evidence of reading instructions
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to validate (default: 3)'
+        required: false
+        default: '3'
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate-copilot-session:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Run Copilot Session Validation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.inputs.pr_number || '3' }}"
+          echo "🎯 Validating Copilot session on PR #${PR_NUMBER}"
+          
+          # Run the validation script
+          .github/scripts/validate-copilot-session.sh "$PR_NUMBER" "${{ github.repository_owner }}" "${{ github.event.repository.name }}"
+
+      - name: Validation Summary
+        if: always()
+        run: |
+          echo "📊 Validation Summary"
+          echo "===================="
+          if [ $? -eq 0 ]; then
+            echo "✅ All validations passed - Copilot is following the established rules!"
+          else
+            echo "❌ Some validations failed - Copilot may not be following all rules"
+            exit 1
+          fi

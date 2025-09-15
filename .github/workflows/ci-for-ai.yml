@@ -1,12 +1,12 @@
 name: CI for AI
 
 # This workflow tests Copilot's development practices by:
-# 1. Creating comments on PRs to trigger Copilot sessions
+# 1. Creating dynamic comments on PRs to trigger Copilot sessions with new feature requests
 # 2. Validating that proper development practices are followed
-# 3. Supporting both reusable PR (default) and fresh PR modes
+# 3. Supporting incremental quote feature requests (--quote-1, --quote-2, etc.)
 #
-# Fresh PR Mode: Prevents context contamination by creating isolated test PRs
-# Reusable PR Mode: Uses PR #327 for operational simplicity
+# The workflow automatically detects existing quote feature requests and asks for the next one,
+# ensuring Copilot has to build something new each time rather than repeating the same feature.
 
 on:
   schedule:
@@ -22,59 +22,42 @@ permissions:
 
 jobs:
   create-test-comment:
-    # Only create comment on schedule or manual dispatch without comment_id
+    # Create dynamic comment requesting next incremental quote feature
     runs-on: ubuntu-latest
-    outputs:
-      comment-id: ${{ steps.create-comment.outputs.comment-id || steps.set-output.outputs.comment-id }}
-      comment-created: ${{ steps.create-comment.outputs.comment-id != '' && steps.create-comment.outputs.comment-id != null }}
-      pr-number: ${{ steps.set-pr.outputs.pr-number }}
-    
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check for existing test comment
-        id: check-existing
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_AUTOMATION_TOKEN }}
-        run: |
-          PR_NUMBER=1
-          
-          # Check if there's already a recent comment from this workflow (within last 4 hours)
-          FOUR_HOURS_AGO=$(date -u -d '4 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          
-          EXISTING_COMMENTS=$(curl -s \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments?since=$FOUR_HOURS_AGO")
-          
-          # Check if any comment contains the copilot request text
-          COPILOT_COMMENT_COUNT=$(echo "$EXISTING_COMMENTS" | jq '[.[] | select(.body | contains("@copilot please create a new feature"))] | length')
-          
-          if [ "$COPILOT_COMMENT_COUNT" -gt 0 ]; then
-            echo "❌ Found $COPILOT_COMMENT_COUNT existing copilot test comment(s) in the last 4 hours. Skipping creation."
-            echo "existing-comment=true" >> $GITHUB_OUTPUT
-          else
-            echo "✅ No existing copilot test comments found in the last 4 hours. Proceeding with creation."
-            echo "existing-comment=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Set output for skipped comment creation
-        id: set-output
-        if: steps.check-existing.outputs.existing-comment == 'true' || steps.check-main.outputs.main-ci-failing == 'true'
-        run: |
-          echo "Comment creation was skipped"
-          echo "comment-id=" >> $GITHUB_OUTPUT
-
       - name: Create CI/AI test comment
         id: create-comment
-        if: steps.check-existing.outputs.existing-comment == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GH_AUTOMATION_TOKEN }}
         run: |
-          PR_NUMBER=1
+          PR_NUMBER=3
           
-          COMMENT_BODY="@copilot please create a new feature to support an "--about" argument which will print the following text \"This application is a demonstration of Github copilot practices\"."
+          # Fetch existing comments to determine next quote number
+          echo "🔍 Fetching existing comments to determine next quote number..."
+          COMMENTS_RESPONSE=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments")
+
+          # Extract quote numbers from existing comments and find the highest one
+          EXISTING_QUOTES=$(echo "$COMMENTS_RESPONSE" | jq -r '.[].body' | grep -oE '\-\-quote\-[0-9]+' | grep -oE '[0-9]+' | sort -n | tail -1)
+          
+          # If no quotes found, start with 1, otherwise increment
+          if [ -z "$EXISTING_QUOTES" ]; then
+            NEXT_QUOTE_NUM=1
+          else
+            NEXT_QUOTE_NUM=$((EXISTING_QUOTES + 1))
+          fi
+          
+          echo "📊 Found highest existing quote number: ${EXISTING_QUOTES:-none}"
+          echo "🎯 Next quote number will be: $NEXT_QUOTE_NUM"
+          
+          # Create comment body with the next quote number
+          COMMENT_BODY="@copilot please create a new feature to support a \"--quote-$NEXT_QUOTE_NUM\" argument which prints a famous quote. This should be invoked like \`sbt \"helloWorld/run --quote-$NEXT_QUOTE_NUM\"\` and display an inspiring or famous quote."
 
           # Create the comment using proper JSON formatting with jq
           COMMENT_PAYLOAD=$(jq -n \
@@ -99,5 +82,6 @@ jobs:
             exit 1
           fi
           
-          echo "✅ Created comment #$COMMENT_ID on PR #$PR_NUMBER"
+          echo "✅ Created comment #$COMMENT_ID on PR #$PR_NUMBER requesting --quote-$NEXT_QUOTE_NUM feature"
           echo "comment-id=$COMMENT_ID" >> $GITHUB_OUTPUT
+          echo "quote-number=$NEXT_QUOTE_NUM" >> $GITHUB_OUTPUT
