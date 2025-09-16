@@ -9,19 +9,22 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
 
   // Helper to capture System.out directly since FS2 stdout bypasses Console.withOut
+  // Synchronized to handle concurrent test execution
   private def captureSystemOut[A](action: IO[A]): IO[(A, String)] = {
     IO {
-      val outputStream = new ByteArrayOutputStream()
-      val printStream = new PrintStream(outputStream)
-      val originalOut = System.out
-      
-      try {
-        System.setOut(printStream)
-        val result = action.unsafeRunSync()
-        val output = outputStream.toString("UTF-8")
-        (result, output)
-      } finally {
-        System.setOut(originalOut)
+      synchronized {
+        val outputStream = new ByteArrayOutputStream()
+        val printStream = new PrintStream(outputStream)
+        val originalOut = System.out
+        
+        try {
+          System.setOut(printStream)
+          val result = action.unsafeRunSync()
+          val output = outputStream.toString("UTF-8")
+          (result, output)
+        } finally {
+          System.setOut(originalOut)
+        }
       }
     }
   }
