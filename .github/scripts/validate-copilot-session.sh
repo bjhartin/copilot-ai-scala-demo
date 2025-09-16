@@ -66,6 +66,9 @@ fetch_copilot_workflow_logs() {
     
     local run_title=$(echo "$run_details" | jq -r '.display_title // .name // ""')
     
+    # Store session metadata for TDD validation
+    echo "$run_details" > "${TEMP_DIR}/run_details.json"
+    
     # Get the jobs for this run
     local jobs_response=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
@@ -132,15 +135,58 @@ validate_instructions_read() {
 check_tdd() {
     echo "🔍 Checking TDD process compliance..."
     
+    # Extract session start time from workflow run details
+    local session_start_time=""
+    if [ -f "${TEMP_DIR}/run_details.json" ]; then
+        # Get the workflow run start time from the API response 
+        session_start_time=$(jq -r '.run_started_at // .created_at' "${TEMP_DIR}/run_details.json" 2>/dev/null)
+        
+        if [ -n "$session_start_time" ] && [ "$session_start_time" != "null" ]; then
+            echo "   📅 Copilot session started at: $session_start_time"
+        else
+            echo "   ⚠️  Could not determine session start time from workflow run details"
+            # Fallback to extracting from logs
+            if [ -f "$WORKFLOW_LOGS" ] && [ -s "$WORKFLOW_LOGS" ]; then
+                session_start_time=$(grep -E "^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z" "$WORKFLOW_LOGS" | head -1 | cut -d' ' -f1)
+                if [ -n "$session_start_time" ]; then
+                    echo "   📅 Session start time from logs: $session_start_time"
+                fi
+            fi
+        fi
+    fi
+    
     # Get all commits from the PR
     local pr_commits=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
         "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/commits")
     
-    # Extract commits with TDD tags
-    local red_commits=$(echo "$pr_commits" | jq -r '.[] | select(.commit.message | contains("#red")) | .sha')
-    local green_commits=$(echo "$pr_commits" | jq -r '.[] | select(.commit.message | contains("#green")) | .sha')
-    local refactor_commits=$(echo "$pr_commits" | jq -r '.[] | select(.commit.message | contains("#refactor")) | .sha')
+    # Filter commits to only those made during or after the Copilot session
+    local filtered_commits="$pr_commits"
+    if [ -n "$session_start_time" ] && [ "$session_start_time" != "null" ]; then
+        # Convert session start time to Unix timestamp for comparison
+        local session_timestamp=$(date -d "$session_start_time" +%s 2>/dev/null || echo "")
+        if [ -n "$session_timestamp" ]; then
+            echo "   🕒 Filtering commits to those made after session start ($session_start_time)..."
+            filtered_commits=$(echo "$pr_commits" | jq --argjson session_ts "$session_timestamp" '
+                [.[] | select(
+                    (.commit.author.date | fromdateiso8601) >= $session_ts or
+                    (.commit.committer.date | fromdateiso8601) >= $session_ts
+                )]')
+            
+            local total_commits=$(echo "$pr_commits" | jq '. | length')
+            local session_commits=$(echo "$filtered_commits" | jq '. | length')
+            echo "   📊 Filtered from $total_commits total commits to $session_commits session commits"
+        else
+            echo "   ⚠️  Could not parse session start time, using all PR commits"
+        fi
+    else
+        echo "   ⚠️  No session start time available, using all PR commits"
+    fi
+    
+    # Extract commits with TDD tags from the filtered set
+    local red_commits=$(echo "$filtered_commits" | jq -r '.[] | select(.commit.message | contains("#red")) | .sha')
+    local green_commits=$(echo "$filtered_commits" | jq -r '.[] | select(.commit.message | contains("#green")) | .sha')
+    local refactor_commits=$(echo "$filtered_commits" | jq -r '.[] | select(.commit.message | contains("#refactor")) | .sha')
     
     # Check if we have commits of each type
     if [ -z "$red_commits" ]; then
