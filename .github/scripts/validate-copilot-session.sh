@@ -129,6 +129,76 @@ validate_instructions_read() {
      fi
  }
 
+check_tdd() {
+    echo "🔍 Checking TDD process compliance..."
+    
+    # Get all commits from the PR
+    local pr_commits=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+        -H "Accept: application/vnd.github.v3+json" \
+        "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/commits")
+    
+    # Extract commits with TDD tags
+    local red_commits=$(echo "$pr_commits" | jq -r '.[] | select(.commit.message | contains("#red")) | .sha')
+    local green_commits=$(echo "$pr_commits" | jq -r '.[] | select(.commit.message | contains("#green")) | .sha')
+    local refactor_commits=$(echo "$pr_commits" | jq -r '.[] | select(.commit.message | contains("#refactor")) | .sha')
+    
+    # Check if we have commits of each type
+    if [ -z "$red_commits" ]; then
+        echo "   ⚠️  No #red commits found - skipping TDD validation"
+        return 0
+    fi
+    
+    if [ -z "$green_commits" ]; then
+        echo "   ⚠️  No #green commits found - skipping TDD validation"
+        return 0
+    fi
+    
+    echo "   📋 Found $(echo "$red_commits" | wc -w) #red commits"
+    echo "   📋 Found $(echo "$green_commits" | wc -w) #green commits"
+    echo "   📋 Found $(echo "$refactor_commits" | wc -w) #refactor commits"
+    
+    # Randomly select one commit of each type
+    local selected_red=$(echo "$red_commits" | shuf -n 1)
+    local selected_green=$(echo "$green_commits" | shuf -n 1)
+    
+    echo "   🎲 Testing red commit: $selected_red"
+    echo "   🎲 Testing green commit: $selected_green"
+    
+    # Save current state
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    local current_commit=$(git rev-parse HEAD)
+    
+    local tdd_exit_code=0
+    
+    # Test red commit - should have failing tests
+    echo "   🔴 Checking out red commit and running tests..."
+    git checkout "$selected_red" --quiet
+    
+    # Source dev environment and run tests, capture output
+    if source dev.env > /dev/null 2>&1 && sbt test > "${TEMP_DIR}/red_test_output.log" 2>&1; then
+        echo "   ❌ FAIL: Tests passed on #red commit (should fail)"
+        tdd_exit_code=1
+    else
+        echo "   ✅ PASS: Tests failed on #red commit as expected"
+    fi
+    
+    # Test green commit - should have passing tests
+    echo "   🟢 Checking out green commit and running tests..."
+    git checkout "$selected_green" --quiet
+    
+    if source dev.env > /dev/null 2>&1 && sbt test > "${TEMP_DIR}/green_test_output.log" 2>&1; then
+        echo "   ✅ PASS: Tests passed on #green commit as expected"
+    else
+        echo "   ❌ FAIL: Tests failed on #green commit (should pass)"
+        tdd_exit_code=1
+    fi
+    
+    # Restore original state
+    git checkout "$current_commit" --quiet
+    
+    return $tdd_exit_code
+}
+
 # Main validation runner
 run_validations() {
     local exit_code=0
@@ -141,6 +211,11 @@ run_validations() {
     if ! validate_environment_setup; then
         exit_code=1
      fi
+    
+    # TDD validation
+    if ! check_tdd; then
+        exit_code=1
+    fi
     
     # Cleanup
     #rm -rf "$TEMP_DIR"
