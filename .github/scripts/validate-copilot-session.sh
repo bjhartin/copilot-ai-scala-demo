@@ -135,22 +135,15 @@ validate_instructions_read() {
 check_tdd() {
     echo "🔍 Checking TDD process compliance..."
     
-    # Extract session start time from workflow run details
+    # Extract session start time from workflow run details (silent operation)
     local session_start_time=""
     if [ -f "${TEMP_DIR}/run_details.json" ]; then
-        # Get the workflow run start time from the API response 
         session_start_time=$(jq -r '.run_started_at // .created_at' "${TEMP_DIR}/run_details.json" 2>/dev/null)
         
-        if [ -n "$session_start_time" ] && [ "$session_start_time" != "null" ]; then
-            echo "   📅 Copilot session started at: $session_start_time"
-        else
-            echo "   ⚠️  Could not determine session start time from workflow run details"
-            # Fallback to extracting from logs
+        # Fallback to extracting from logs if needed
+        if [ -z "$session_start_time" ] || [ "$session_start_time" = "null" ]; then
             if [ -f "$WORKFLOW_LOGS" ] && [ -s "$WORKFLOW_LOGS" ]; then
                 session_start_time=$(grep -E "^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z" "$WORKFLOW_LOGS" | head -1 | cut -d' ' -f1)
-                if [ -n "$session_start_time" ]; then
-                    echo "   📅 Session start time from logs: $session_start_time"
-                fi
             fi
         fi
     fi
@@ -163,79 +156,67 @@ check_tdd() {
     # Filter commits to only those made during or after the Copilot session
     local filtered_commits="$pr_commits"
     if [ -n "$session_start_time" ] && [ "$session_start_time" != "null" ]; then
-        # Convert session start time to Unix timestamp for comparison
         local session_timestamp=$(date -d "$session_start_time" +%s 2>/dev/null || echo "")
         if [ -n "$session_timestamp" ]; then
-            echo "   🕒 Filtering commits to those made after session start ($session_start_time)..."
             filtered_commits=$(echo "$pr_commits" | jq --argjson session_ts "$session_timestamp" '
                 [.[] | select(
                     (.commit.author.date | fromdateiso8601) >= $session_ts or
                     (.commit.committer.date | fromdateiso8601) >= $session_ts
                 )]')
-            
-            local total_commits=$(echo "$pr_commits" | jq '. | length')
-            local session_commits=$(echo "$filtered_commits" | jq '. | length')
-            echo "   📊 Filtered from $total_commits total commits to $session_commits session commits"
-        else
-            echo "   ⚠️  Could not parse session start time, using all PR commits"
         fi
-    else
-        echo "   ⚠️  No session start time available, using all PR commits"
     fi
+    
+    # Count session commits and show summary
+    local session_commits=$(echo "$filtered_commits" | jq '. | length')
+    echo "   📊 Found $session_commits commits in this copilot session"
     
     # Extract commits with TDD tags from the filtered set
     local red_commits=$(echo "$filtered_commits" | jq -r '.[] | select(.commit.message | contains("#red")) | .sha')
     local green_commits=$(echo "$filtered_commits" | jq -r '.[] | select(.commit.message | contains("#green")) | .sha')
-    local refactor_commits=$(echo "$filtered_commits" | jq -r '.[] | select(.commit.message | contains("#refactor")) | .sha')
     
-    # Check if we have commits of each type
-    if [ -z "$red_commits" ]; then
-        echo "   ⚠️  No #red commits found - skipping TDD validation"
-        return 0
-    fi
-    
-    if [ -z "$green_commits" ]; then
-        echo "   ⚠️  No #green commits found - skipping TDD validation"
-        return 0
-    fi
-    
-    echo "   📋 Found $(echo "$red_commits" | wc -w) #red commits"
-    echo "   📋 Found $(echo "$green_commits" | wc -w) #green commits"
-    echo "   📋 Found $(echo "$refactor_commits" | wc -w) #refactor commits"
-    
-    # Randomly select one commit of each type
-    local selected_red=$(echo "$red_commits" | shuf -n 1)
-    local selected_green=$(echo "$green_commits" | shuf -n 1)
-    
-    echo "   🎲 Testing red commit: $selected_red"
-    echo "   🎲 Testing green commit: $selected_green"
-    
-    # Save current state
-    local current_branch=$(git rev-parse --abbrev-ref HEAD)
-    local current_commit=$(git rev-parse HEAD)
+    local red_count=$(echo "$red_commits" | grep -c . || echo "0")
+    local green_count=$(echo "$green_commits" | grep -c . || echo "0")
     
     local tdd_exit_code=0
     
+    # Check if we have required commits and fail if missing
+    if [ -z "$red_commits" ]; then
+        echo "   ❌ No #red commits found - TDD validation failed"
+        tdd_exit_code=1
+    fi
+    
+    if [ -z "$green_commits" ]; then
+        echo "   ❌ No #green commits found - TDD validation failed"
+        tdd_exit_code=1
+    fi
+    
+    # Exit early if missing required commits
+    if [ $tdd_exit_code -eq 1 ]; then
+        return 1
+    fi
+    
+    # Save current state for testing
+    local current_commit=$(git rev-parse HEAD)
+    
     # Test red commit - should have failing tests
-    echo "   🔴 Checking out red commit and running tests..."
+    local selected_red=$(echo "$red_commits" | shuf -n 1)
     git checkout "$selected_red" --quiet
     
-    # Source dev environment and run tests, capture output
     if source dev.env > /dev/null 2>&1 && sbt test > "${TEMP_DIR}/red_test_output.log" 2>&1; then
-        echo "   ❌ FAIL: Tests passed on #red commit (should fail)"
+        echo "   ❌ $red_count #red commits, tests pass at sampled commit"
         tdd_exit_code=1
     else
-        echo "   ✅ PASS: Tests failed on #red commit as expected"
+        echo "   ✅ $red_count #red commits, tests fail at sampled commit"
     fi
     
     # Test green commit - should have passing tests
-    echo "   🟢 Checking out green commit and running tests..."
+    local selected_green=$(echo "$green_commits" | shuf -n 1)
     git checkout "$selected_green" --quiet
     
     if source dev.env > /dev/null 2>&1 && sbt test > "${TEMP_DIR}/green_test_output.log" 2>&1; then
-        echo "   ✅ PASS: Tests passed on #green commit as expected"
+        echo "   ✅ $green_count #green commits, tests pass at sampled commit"
     else
-        echo "   ❌ FAIL: Tests failed on #green commit (should pass)"
+        echo "   ❌ $green_count #green commits, tests fail at sampled commit"
         tdd_exit_code=1
     fi
     
