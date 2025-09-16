@@ -1,28 +1,30 @@
 package com.bjhartin.helloworld
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.{ExitCode, IO, IOApp, Ref}
 import cats.syntax.all._
-import fs2.{Stream, text}
+import fs2.{Pipe, Stream, text}
 import fs2.io.stdout
 
 object Main extends IOApp {
 
-  private def printQuote(quote: String): IO[ExitCode] =
-    Stream
-      .emit(quote)
-      .through(text.utf8.encode)
-      .through(stdout[IO])
-      .compile
-      .drain
-      .as(ExitCode.Success)
+  // Testable version that accepts an output pipe
+  def runWithOutput(args: List[String], outputPipe: Pipe[IO, Byte, Nothing]): IO[ExitCode] = {
+    
+    def printQuote(quote: String): IO[ExitCode] =
+      Stream
+        .emit(quote)
+        .through(text.utf8.encode)
+        .through(outputPipe)
+        .compile
+        .drain
+        .as(ExitCode.Success)
 
-  def run(args: List[String]): IO[ExitCode] = {
     args.headOption match {
       case Some("--about") =>
         val aboutStream = Stream
           .emit("This application exists as part of a repository which is a demonstration of how to use copilot agent in the cloud.")
           .through(text.utf8.encode)
-          .through(stdout[IO])
+          .through(outputPipe)
         aboutStream.compile.drain.as(ExitCode.Success)
         
       case Some("--help") =>
@@ -67,7 +69,7 @@ object Main extends IOApp {
         val helpStream = Stream
           .emit(helpText)
           .through(text.utf8.encode)
-          .through(stdout[IO])
+          .through(outputPipe)
         helpStream.compile.drain.as(ExitCode.Success)
         
       case Some("--quote-1") =>
@@ -105,8 +107,12 @@ object Main extends IOApp {
         val helloStream = Stream
           .emit(s"Hello, $greeting!")
           .through(text.utf8.encode)
-          .through(stdout[IO])
+          .through(outputPipe)
         helloStream.compile.drain.as(ExitCode.Success)
     }
   }
+
+  // Original run method that uses stdout
+  def run(args: List[String]): IO[ExitCode] = 
+    runWithOutput(args, stdout[IO])
 }
