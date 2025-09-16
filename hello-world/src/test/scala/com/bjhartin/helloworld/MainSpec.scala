@@ -63,5 +63,9 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
     "should handle --quote-9 flag" in {
       Main.run(List("--quote-9")).asserting(_ shouldBe cats.effect.ExitCode.Success)
     }
+    
+    "should handle --quote-10 flag" in {
+      Main.run(List("--quote-10")).asserting(_ shouldBe cats.effect.ExitCode.Success)
+    }
   }
 }
