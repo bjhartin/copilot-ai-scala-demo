@@ -128,6 +128,22 @@ To add new validation checks:
 - **Strong Pass**: 2+ workflow log patterns
 - **Regular Pass**: 3+ combined patterns
 
+### TDD Validation ⭐ NEW
+**Primary Check**: Validates proper Test-Driven Development workflow by examining commits
+
+**Process**:
+1. **Identifies commits** with TDD tags: "#red", "#green", and "#refactor"
+2. **Randomly selects** one commit of each type from the latest Copilot session
+3. **Tests behavior**: 
+   - Checks out "#red" commits and asserts that at least one test fails
+   - Checks out "#green" commits and asserts that no tests fail
+4. **Minimal code**: Uses efficient git operations and test execution
+5. **Graceful handling**: Skips validation if TDD commits are not found
+
+**Pass Criteria**:
+- Tests fail on selected "#red" commit (as expected for TDD red phase)
+- Tests pass on selected "#green" commit (as expected for TDD green phase)
+
 ### Development Practices
 Checks for:
 - **Test Coverage**: Evidence of test cases, specs, properties

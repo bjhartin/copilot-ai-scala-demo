@@ -66,6 +66,9 @@ fetch_copilot_workflow_logs() {
     
     local run_title=$(echo "$run_details" | jq -r '.display_title // .name // ""')
     
+    # Store session metadata for TDD validation
+    echo "$run_details" > "${TEMP_DIR}/run_details.json"
+    
     # Get the jobs for this run
     local jobs_response=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
@@ -129,6 +132,100 @@ validate_instructions_read() {
      fi
  }
 
+check_tdd() {
+    echo "🔍 Checking TDD process compliance..."
+    
+    # Extract session start time from workflow run details (silent operation)
+    local session_start_time=""
+    if [ -f "${TEMP_DIR}/run_details.json" ]; then
+        session_start_time=$(jq -r '.run_started_at // .created_at' "${TEMP_DIR}/run_details.json" 2>/dev/null)
+        
+        # Fallback to extracting from logs if needed
+        if [ -z "$session_start_time" ] || [ "$session_start_time" = "null" ]; then
+            if [ -f "$WORKFLOW_LOGS" ] && [ -s "$WORKFLOW_LOGS" ]; then
+                session_start_time=$(grep -E "^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z" "$WORKFLOW_LOGS" | head -1 | cut -d' ' -f1)
+            fi
+        fi
+    fi
+    
+    # Get all commits from the PR
+    local pr_commits=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+        -H "Accept: application/vnd.github.v3+json" \
+        "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/commits")
+    
+    # Filter commits to only those made during or after the Copilot session
+    local filtered_commits="$pr_commits"
+    if [ -n "$session_start_time" ] && [ "$session_start_time" != "null" ]; then
+        local session_timestamp=$(date -d "$session_start_time" +%s 2>/dev/null || echo "")
+        if [ -n "$session_timestamp" ]; then
+            filtered_commits=$(echo "$pr_commits" | jq --argjson session_ts "$session_timestamp" '
+                [.[] | select(
+                    (.commit.author.date | fromdateiso8601) >= $session_ts or
+                    (.commit.committer.date | fromdateiso8601) >= $session_ts
+                )]')
+        fi
+    fi
+    
+    # Count session commits and show summary
+    local session_commits=$(echo "$filtered_commits" | jq '. | length')
+    echo "   📊 Found $session_commits commits in this copilot session"
+    
+    # Extract commits with TDD tags from the filtered set
+    local red_commits=$(echo "$filtered_commits" | jq -r '.[] | select(.commit.message | contains("#red")) | .sha')
+    local green_commits=$(echo "$filtered_commits" | jq -r '.[] | select(.commit.message | contains("#green")) | .sha')
+    
+    local red_count=$(echo "$red_commits" | grep -c . || echo "0")
+    local green_count=$(echo "$green_commits" | grep -c . || echo "0")
+    
+    local tdd_exit_code=0
+    
+    # Check if we have required commits and fail if missing
+    if [ -z "$red_commits" ]; then
+        echo "   ❌ No #red commits found - TDD validation failed"
+        tdd_exit_code=1
+    fi
+    
+    if [ -z "$green_commits" ]; then
+        echo "   ❌ No #green commits found - TDD validation failed"
+        tdd_exit_code=1
+    fi
+    
+    # Exit early if missing required commits
+    if [ $tdd_exit_code -eq 1 ]; then
+        return 1
+    fi
+    
+    # Save current state for testing
+    local current_commit=$(git rev-parse HEAD)
+    
+    # Test red commit - should have failing tests
+    local selected_red=$(echo "$red_commits" | shuf -n 1)
+    git checkout "$selected_red" --quiet
+    
+    if source dev.env > /dev/null 2>&1 && sbt test > "${TEMP_DIR}/red_test_output.log" 2>&1; then
+        echo "   ❌ $red_count #red commits, tests pass at sampled commit"
+        tdd_exit_code=1
+    else
+        echo "   ✅ $red_count #red commits, tests fail at sampled commit"
+    fi
+    
+    # Test green commit - should have passing tests
+    local selected_green=$(echo "$green_commits" | shuf -n 1)
+    git checkout "$selected_green" --quiet
+    
+    if source dev.env > /dev/null 2>&1 && sbt test > "${TEMP_DIR}/green_test_output.log" 2>&1; then
+        echo "   ✅ $green_count #green commits, tests pass at sampled commit"
+    else
+        echo "   ❌ $green_count #green commits, tests fail at sampled commit"
+        tdd_exit_code=1
+    fi
+    
+    # Restore original state
+    git checkout "$current_commit" --quiet
+    
+    return $tdd_exit_code
+}
+
 # Main validation runner
 run_validations() {
     local exit_code=0
@@ -141,6 +238,11 @@ run_validations() {
     if ! validate_environment_setup; then
         exit_code=1
      fi
+    
+    # TDD validation
+    if ! check_tdd; then
+        exit_code=1
+    fi
     
     # Cleanup
     #rm -rf "$TEMP_DIR"
