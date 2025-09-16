@@ -80,6 +80,7 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
             |  --quote-8      Display yet another inspiring famous quote
             |  --quote-9      Display yet another inspiring famous quote
             |  --quote-10     Display yet another inspiring famous quote
+            |  --quote-11     Display yet another inspiring famous quote
             |
             |Examples:
             |  sbt "helloWorld/run"           # Output: Hello, World!
@@ -96,6 +97,7 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
             |  sbt "helloWorld/run --quote-8" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-9" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-10" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-11" # Display yet another famous quote
             |""".stripMargin
         output shouldBe expectedHelp
       }
@@ -168,6 +170,13 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
       captureSystemOut(Main.run(List("--quote-10"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"In the end, we will remember not the words of our enemies, but the silence of our friends.\" - Martin Luther King Jr."
+      }
+    }
+    
+    "should print correct quote for --quote-11 flag" in {
+      captureSystemOut(Main.run(List("--quote-11"))).asserting { case (exitCode, output) =>
+        exitCode shouldBe cats.effect.ExitCode.Success
+        output shouldBe "\"The way to get started is to quit talking and begin doing.\" - Walt Disney"
       }
     }
   }
