@@ -36,6 +36,7 @@ object Main extends IOApp {
             |  --quote-6      Display yet another inspiring famous quote
             |  --quote-7      Display yet another inspiring famous quote
             |  --quote-8      Display yet another inspiring famous quote
+            |  --quote-9      Display yet another inspiring famous quote
             |
             |Examples:
             |  sbt "helloWorld/run"           # Output: Hello, World!
@@ -50,6 +51,7 @@ object Main extends IOApp {
             |  sbt "helloWorld/run --quote-6" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-7" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-8" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-9" # Display yet another famous quote
             |""".stripMargin
         val helpStream = Stream
           .emit(helpText)
@@ -109,6 +111,13 @@ object Main extends IOApp {
       case Some("--quote-8") =>
         val quoteStream = Stream
           .emit("\"Be yourself; everyone else is already taken.\" - Oscar Wilde")
+          .through(text.utf8.encode)
+          .through(stdout[IO])
+        quoteStream.compile.drain.as(ExitCode.Success)
+        
+      case Some("--quote-9") =>
+        val quoteStream = Stream
+          .emit("\"It is during our darkest moments that we must focus to see the light.\" - Aristotle")
           .through(text.utf8.encode)
           .through(stdout[IO])
         quoteStream.compile.drain.as(ExitCode.Success)
