@@ -81,6 +81,7 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
             |  --quote-9      Display yet another inspiring famous quote
             |  --quote-10     Display yet another inspiring famous quote
             |  --quote-11     Display yet another inspiring famous quote
+            |  --quote-12     Display yet another inspiring famous quote
             |
             |Examples:
             |  sbt "helloWorld/run"           # Output: Hello, World!
@@ -98,6 +99,7 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
             |  sbt "helloWorld/run --quote-9" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-10" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-11" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-12" # Display yet another famous quote
             |""".stripMargin
         output shouldBe expectedHelp
       }

@@ -48,6 +48,7 @@ object Main extends IOApp {
             |  --quote-9      Display yet another inspiring famous quote
             |  --quote-10     Display yet another inspiring famous quote
             |  --quote-11     Display yet another inspiring famous quote
+            |  --quote-12     Display yet another inspiring famous quote
             |
             |Examples:
             |  sbt "helloWorld/run"           # Output: Hello, World!
@@ -65,6 +66,7 @@ object Main extends IOApp {
             |  sbt "helloWorld/run --quote-9" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-10" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-11" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-12" # Display yet another famous quote
             |""".stripMargin
         val helpStream = Stream
           .emit(helpText)
@@ -104,6 +106,9 @@ object Main extends IOApp {
         
       case Some("--quote-11") =>
         printQuote("\"The way to get started is to quit talking and begin doing.\" - Walt Disney")
+        
+      case Some("--quote-12") =>
+        printQuote("\"The future belongs to those who believe in the beauty of their dreams.\" - Eleanor Roosevelt")
         
       case _ =>
         val greeting = args.headOption.getOrElse("World")
