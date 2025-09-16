@@ -7,6 +7,15 @@ import fs2.io.stdout
 
 object Main extends IOApp {
 
+  private def printQuote(quote: String): IO[ExitCode] =
+    Stream
+      .emit(quote)
+      .through(text.utf8.encode)
+      .through(stdout[IO])
+      .compile
+      .drain
+      .as(ExitCode.Success)
+
   def run(args: List[String]): IO[ExitCode] = {
     args.headOption match {
       case Some("--about") =>
@@ -60,67 +69,31 @@ object Main extends IOApp {
         helpStream.compile.drain.as(ExitCode.Success)
         
       case Some("--quote-1") =>
-        val quoteStream = Stream
-          .emit("\"The only way to do great work is to love what you do.\" - Steve Jobs")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"The only way to do great work is to love what you do.\" - Steve Jobs")
         
       case Some("--quote-2") =>
-        val quoteStream = Stream
-          .emit("\"Innovation distinguishes between a leader and a follower.\" - Steve Jobs")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"Innovation distinguishes between a leader and a follower.\" - Steve Jobs")
         
       case Some("--quote-3") =>
-        val quoteStream = Stream
-          .emit("\"The future belongs to those who believe in the beauty of their dreams.\" - Eleanor Roosevelt")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"The future belongs to those who believe in the beauty of their dreams.\" - Eleanor Roosevelt")
         
       case Some("--quote-4") =>
-        val quoteStream = Stream
-          .emit("\"Success is not final, failure is not fatal: it is the courage to continue that counts.\" - Winston Churchill")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"Success is not final, failure is not fatal: it is the courage to continue that counts.\" - Winston Churchill")
         
       case Some("--quote-5") =>
-        val quoteStream = Stream
-          .emit("\"The only impossible journey is the one you never begin.\" - Tony Robbins")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"The only impossible journey is the one you never begin.\" - Tony Robbins")
         
       case Some("--quote-6") =>
-        val quoteStream = Stream
-          .emit("\"Life is what happens when you're busy making other plans.\" - John Lennon")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"Life is what happens when you're busy making other plans.\" - John Lennon")
         
       case Some("--quote-7") =>
-        val quoteStream = Stream
-          .emit("\"The best time to plant a tree was 20 years ago. The second best time is now.\" - Chinese Proverb")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"The best time to plant a tree was 20 years ago. The second best time is now.\" - Chinese Proverb")
         
       case Some("--quote-8") =>
-        val quoteStream = Stream
-          .emit("\"Be yourself; everyone else is already taken.\" - Oscar Wilde")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"Be yourself; everyone else is already taken.\" - Oscar Wilde")
         
       case Some("--quote-9") =>
-        val quoteStream = Stream
-          .emit("\"It is during our darkest moments that we must focus to see the light.\" - Aristotle")
-          .through(text.utf8.encode)
-          .through(stdout[IO])
-        quoteStream.compile.drain.as(ExitCode.Success)
+        printQuote("\"It is during our darkest moments that we must focus to see the light.\" - Aristotle")
         
       case _ =>
         val greeting = args.headOption.getOrElse("World")
