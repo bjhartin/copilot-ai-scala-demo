@@ -8,16 +8,20 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 
 class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
 
-  // Helper to capture console output using Console.withOut as suggested
-  private def captureConsoleOutput[A](action: IO[A]): IO[(A, String)] = {
+  // Helper to capture System.out directly since FS2 stdout bypasses Console.withOut
+  private def captureSystemOut[A](action: IO[A]): IO[(A, String)] = {
     IO {
       val outputStream = new ByteArrayOutputStream()
       val printStream = new PrintStream(outputStream)
+      val originalOut = System.out
       
-      Console.withOut(printStream) {
+      try {
+        System.setOut(printStream)
         val result = action.unsafeRunSync()
         val output = outputStream.toString("UTF-8")
         (result, output)
+      } finally {
+        System.setOut(originalOut)
       }
     }
   }
@@ -44,70 +48,70 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
     }
     
     "should print correct quote for --quote-1 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-1"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-1"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"The only way to do great work is to love what you do.\" - Steve Jobs"
       }
     }
     
     "should print correct quote for --quote-2 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-2"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-2"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"Innovation distinguishes between a leader and a follower.\" - Steve Jobs"
       }
     }
     
     "should print correct quote for --quote-3 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-3"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-3"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"The future belongs to those who believe in the beauty of their dreams.\" - Eleanor Roosevelt"
       }
     }
     
     "should print correct quote for --quote-4 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-4"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-4"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"Success is not final, failure is not fatal: it is the courage to continue that counts.\" - Winston Churchill"
       }
     }
     
     "should print correct quote for --quote-5 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-5"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-5"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"The only impossible journey is the one you never begin.\" - Tony Robbins"
       }
     }
     
     "should print correct quote for --quote-6 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-6"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-6"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"Life is what happens when you're busy making other plans.\" - John Lennon"
       }
     }
     
     "should print correct quote for --quote-7 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-7"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-7"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"The best time to plant a tree was 20 years ago. The second best time is now.\" - Chinese Proverb"
       }
     }
     
     "should print correct quote for --quote-8 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-8"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-8"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"Be yourself; everyone else is already taken.\" - Oscar Wilde"
       }
     }
     
     "should print correct quote for --quote-9 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-9"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-9"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"It is during our darkest moments that we must focus to see the light.\" - Aristotle"
       }
     }
     
     "should print correct quote for --quote-10 flag" in {
-      captureConsoleOutput(Main.run(List("--quote-10"))).asserting { case (exitCode, output) =>
+      captureSystemOut(Main.run(List("--quote-10"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"In the end, we will remember not the words of our enemies, but the silence of our friends.\" - Martin Luther King Jr."
       }
