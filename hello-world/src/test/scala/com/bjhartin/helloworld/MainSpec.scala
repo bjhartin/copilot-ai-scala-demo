@@ -179,5 +179,12 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
         output shouldBe "\"The way to get started is to quit talking and begin doing.\" - Walt Disney"
       }
     }
+    
+    "should print correct quote for --quote-12 flag" in {
+      captureSystemOut(Main.run(List("--quote-12"))).asserting { case (exitCode, output) =>
+        exitCode shouldBe cats.effect.ExitCode.Success
+        output shouldBe "\"The future belongs to those who believe in the beauty of their dreams.\" - Eleanor Roosevelt"
+      }
+    }
   }
 }
