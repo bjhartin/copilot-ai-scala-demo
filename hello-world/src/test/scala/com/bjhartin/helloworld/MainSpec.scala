@@ -47,6 +47,57 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
       Main.run(List("--help")).asserting(_ shouldBe cats.effect.ExitCode.Success)
     }
     
+    "should print correct content for --about flag" in {
+      captureSystemOut(Main.run(List("--about"))).asserting { case (exitCode, output) =>
+        exitCode shouldBe cats.effect.ExitCode.Success
+        output shouldBe "This application exists as part of a repository which is a demonstration of how to use copilot agent in the cloud."
+      }
+    }
+    
+    "should print correct content for --help flag" in {
+      captureSystemOut(Main.run(List("--help"))).asserting { case (exitCode, output) =>
+        exitCode shouldBe cats.effect.ExitCode.Success
+        val expectedHelp = """Usage: sbt "helloWorld/run [OPTION|NAME]"
+            |
+            |A simple hello world application with command-line options.
+            |
+            |Arguments:
+            |  NAME           Print "Hello, NAME!"
+            |
+            |Options:
+            |  --about        Show information about this repository
+            |  --help         Show this help message
+            |  --quote-1      Display an inspiring famous quote
+            |  --quote-2      Display another inspiring famous quote
+            |  --quote-3      Display yet another inspiring famous quote
+            |  --quote-4      Display yet another inspiring famous quote
+            |  --quote-5      Display yet another inspiring famous quote
+            |  --quote-6      Display yet another inspiring famous quote
+            |  --quote-7      Display yet another inspiring famous quote
+            |  --quote-8      Display yet another inspiring famous quote
+            |  --quote-9      Display yet another inspiring famous quote
+            |  --quote-10     Display yet another inspiring famous quote
+            |
+            |Examples:
+            |  sbt "helloWorld/run"           # Output: Hello, World!
+            |  sbt "helloWorld/run Alice"     # Output: Hello, Alice!
+            |  sbt "helloWorld/run --about"   # Show repository information
+            |  sbt "helloWorld/run --help"    # Show this help message
+            |  sbt "helloWorld/run --quote-1" # Display a famous quote
+            |  sbt "helloWorld/run --quote-2" # Display another famous quote
+            |  sbt "helloWorld/run --quote-3" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-4" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-5" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-6" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-7" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-8" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-9" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-10" # Display yet another famous quote
+            |""".stripMargin
+        output shouldBe expectedHelp
+      }
+    }
+    
     "should print correct quote for --quote-1 flag" in {
       captureSystemOut(Main.run(List("--quote-1"))).asserting { case (exitCode, output) =>
         exitCode shouldBe cats.effect.ExitCode.Success
@@ -115,47 +166,6 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
         exitCode shouldBe cats.effect.ExitCode.Success
         output shouldBe "\"In the end, we will remember not the words of our enemies, but the silence of our friends.\" - Martin Luther King Jr."
       }
-    }
-
-    // Keep some of the old tests that just check exit codes for broader coverage
-    "should handle --quote-1 flag" in {
-      Main.run(List("--quote-1")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-2 flag" in {
-      Main.run(List("--quote-2")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-3 flag" in {
-      Main.run(List("--quote-3")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-4 flag" in {
-      Main.run(List("--quote-4")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-5 flag" in {
-      Main.run(List("--quote-5")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-6 flag" in {
-      Main.run(List("--quote-6")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-7 flag" in {
-      Main.run(List("--quote-7")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-8 flag" in {
-      Main.run(List("--quote-8")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-9 flag" in {
-      Main.run(List("--quote-9")).asserting(_ shouldBe cats.effect.ExitCode.Success)
-    }
-    
-    "should handle --quote-10 flag" in {
-      Main.run(List("--quote-10")).asserting(_ shouldBe cats.effect.ExitCode.Success)
     }
   }
 }
