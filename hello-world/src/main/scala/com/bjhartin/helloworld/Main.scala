@@ -17,4 +17,38 @@ object Main extends IOApp {
     
     helloStream.compile.drain.as(ExitCode.Success)
   }
+  
+  def evaluateExpression(expression: String): Either[String, String] = {
+    if (expression.contains("+")) {
+      val parts = expression.split("\\+")
+      if (parts.length == 2) {
+        val left = parts(0).trim
+        val right = parts(1).trim
+        
+        (parseNumber(left), parseNumber(right)) match {
+          case (Some(leftNum), Some(rightNum)) =>
+            val result = leftNum + rightNum
+            // Format result to avoid unnecessary decimals
+            if (result == result.toLong.toDouble) {
+              Right(result.toLong.toString)
+            } else {
+              Right(result.toString)
+            }
+          case _ => Left("Invalid numbers in expression")
+        }
+      } else {
+        Left("Invalid expression format")
+      }
+    } else {
+      Left("Expression must contain addition operator")
+    }
+  }
+  
+  private def parseNumber(str: String): Option[Double] = {
+    try {
+      Some(str.toDouble)
+    } catch {
+      case _: NumberFormatException => None
+    }
+  }
 }
