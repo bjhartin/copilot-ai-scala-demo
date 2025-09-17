@@ -197,5 +197,12 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
         output shouldBe "\"In the middle of difficulty lies opportunity.\" - Albert Einstein"
       }
     }
+    
+    "should print correct quote for --quote-0237405c-5e85-4f80-b2fc-6560b4fd1802 flag" in {
+      captureSystemOut(Main.run(List("--quote-0237405c-5e85-4f80-b2fc-6560b4fd1802"))).asserting { case (exitCode, output) =>
+        exitCode shouldBe cats.effect.ExitCode.Success
+        output shouldBe "\"Try to be a rainbow in someone's cloud.\" - Maya Angelou"
+      }
+    }
   }
 }
