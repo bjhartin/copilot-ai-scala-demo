@@ -20,12 +20,20 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
       Main.run(List("first", "second")).asserting(_ shouldBe cats.effect.ExitCode.Success)
     }
     
-    "should evaluate integer addition with --evaluate" in {
+    "should return ExitCode.Success for valid --evaluate expressions" in {
       Main.run(List("--evaluate", "3+3")).asserting(_ shouldBe cats.effect.ExitCode.Success)
     }
     
-    "should evaluate decimal addition with --evaluate" in {
+    "should return ExitCode.Success for valid decimal --evaluate expressions" in {
       Main.run(List("--evaluate", "3+0.5")).asserting(_ shouldBe cats.effect.ExitCode.Success)
+    }
+    
+    "should return ExitCode.Error for invalid --evaluate expressions" in {
+      Main.run(List("--evaluate", "invalid")).asserting(_ shouldBe cats.effect.ExitCode.Error)
+    }
+    
+    "should return ExitCode.Error for --evaluate without expression" in {
+      Main.run(List("--evaluate")).asserting(_ shouldBe cats.effect.ExitCode.Error)
     }
   }
   

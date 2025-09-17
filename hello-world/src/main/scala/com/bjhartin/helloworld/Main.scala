@@ -8,14 +8,28 @@ import fs2.io.stdout
 object Main extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] = {
-    val greeting = args.headOption.getOrElse("World")
-    
-    val helloStream = Stream
-      .emit(s"Hello, $greeting!")
-      .through(text.utf8.encode)
-      .through(stdout[IO])
-    
-    helloStream.compile.drain.as(ExitCode.Success)
+    args match {
+      case "--evaluate" :: expression :: _ =>
+        evaluateExpression(expression) match {
+          case Right(result) =>
+            val resultStream = Stream
+              .emit(result)
+              .through(text.utf8.encode)
+              .through(stdout[IO])
+            resultStream.compile.drain.as(ExitCode.Success)
+          case Left(_) =>
+            IO.pure(ExitCode.Error)
+        }
+      case "--evaluate" :: Nil =>
+        IO.pure(ExitCode.Error)
+      case _ =>
+        val greeting = args.headOption.getOrElse("World")
+        val helloStream = Stream
+          .emit(s"Hello, $greeting!")
+          .through(text.utf8.encode)
+          .through(stdout[IO])
+        helloStream.compile.drain.as(ExitCode.Success)
+    }
   }
   
   def evaluateExpression(expression: String): Either[String, String] = {
