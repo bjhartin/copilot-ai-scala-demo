@@ -7,6 +7,10 @@ on:
       - '**/*.md'
       - '.github/workflows/**'
       - 'docs/**'
+  pull_request_target:  # This is key for Copilot to be able to trigger PR jobs when it pushes to PR branches
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
 jobs:
   test:
     runs-on: ubuntu-latest
