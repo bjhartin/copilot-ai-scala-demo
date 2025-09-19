@@ -32,6 +32,7 @@ object Main extends IOApp {
     }
   }
   
+  // Evaluates arithmetic expressions containing addition operator
   def evaluateExpression(expression: String): Either[String, String] = {
     if (expression.contains("+")) {
       val parts = expression.split("\\+")
