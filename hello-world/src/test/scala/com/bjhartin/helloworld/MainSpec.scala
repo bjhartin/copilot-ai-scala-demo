@@ -19,5 +19,35 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
     "should handle multiple arguments (taking the first)" in {
       Main.run(List("first", "second")).asserting(_ shouldBe cats.effect.ExitCode.Success)
     }
+    
+    "should return ExitCode.Success for valid --evaluate expressions" in {
+      Main.run(List("--evaluate", "3+3")).asserting(_ shouldBe cats.effect.ExitCode.Success)
+    }
+    
+    "should return ExitCode.Success for valid decimal --evaluate expressions" in {
+      Main.run(List("--evaluate", "3+0.5")).asserting(_ shouldBe cats.effect.ExitCode.Success)
+    }
+    
+    "should return ExitCode.Error for invalid --evaluate expressions" in {
+      Main.run(List("--evaluate", "invalid")).asserting(_ shouldBe cats.effect.ExitCode.Error)
+    }
+    
+    "should return ExitCode.Error for --evaluate without expression" in {
+      Main.run(List("--evaluate")).asserting(_ shouldBe cats.effect.ExitCode.Error)
+    }
+  }
+  
+  "Evaluator" - {
+    "should evaluate simple integer addition" in {
+      Main.evaluateExpression("3+3") shouldBe Right("6")
+    }
+    
+    "should evaluate decimal addition" in {
+      Main.evaluateExpression("3+0.5") shouldBe Right("3.5")
+    }
+    
+    "should handle invalid expressions" in {
+      Main.evaluateExpression("invalid").isLeft shouldBe true
+    }
   }
 }
