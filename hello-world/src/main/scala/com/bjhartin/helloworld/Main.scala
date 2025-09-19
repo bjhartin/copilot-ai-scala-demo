@@ -59,6 +59,7 @@ object Main extends IOApp {
     }
   }
   
+  // Helper method to safely parse string to double
   private def parseNumber(str: String): Option[Double] = {
     try {
       Some(str.toDouble)
