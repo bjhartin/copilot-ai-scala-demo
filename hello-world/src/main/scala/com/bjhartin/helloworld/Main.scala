@@ -6,7 +6,7 @@ import fs2.{Stream, text}
 import fs2.io.stdout
 
 object Main extends IOApp {
-
+  // Main application entry point for hello-world with arithmetic evaluation support
   def run(args: List[String]): IO[ExitCode] = {
     args match {
       case "--evaluate" :: expression :: _ =>
