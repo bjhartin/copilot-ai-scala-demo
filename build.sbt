@@ -36,7 +36,8 @@ lazy val helloWorld = (project in file("hello-world"))
   .settings(
     name := "hello-world",
     libraryDependencies ++= commonDependencies,
-    Compile / mainClass := Some("com.bjhartin.helloworld.Main")
+    Compile / mainClass := Some("com.bjhartin.helloworld.Main"),
+    Test / parallelExecution := false
   )
 
 lazy val devCli = (project in file("dev-cli"))
