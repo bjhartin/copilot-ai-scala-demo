@@ -224,5 +224,12 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
         output shouldBe "\"Believe you can and you're halfway there.\" - Theodore Roosevelt"
       }
     }
+    
+    "should print correct quote for --quote-45f3d03a-be14-484b-8737-59e1e9e426c2 flag" in {
+      captureSystemOut(Main.run(List("--quote-45f3d03a-be14-484b-8737-59e1e9e426c2"))).asserting { case (exitCode, output) =>
+        exitCode shouldBe cats.effect.ExitCode.Success
+        output shouldBe "\"The only limit to our realization of tomorrow will be our doubts of today.\" - Franklin D. Roosevelt"
+      }
+    }
   }
 }
