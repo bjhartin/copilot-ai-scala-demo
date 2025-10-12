@@ -231,5 +231,12 @@ class MainSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
         output shouldBe "\"The only limit to our realization of tomorrow will be our doubts of today.\" - Franklin D. Roosevelt"
       }
     }
+    
+    "should print correct quote for --quote-3209f387-e580-4fee-a7c6-6f0869f4ce15 flag" in {
+      captureSystemOut(Main.run(List("--quote-3209f387-e580-4fee-a7c6-6f0869f4ce15"))).asserting { case (exitCode, output) =>
+        exitCode shouldBe cats.effect.ExitCode.Success
+        output shouldBe "\"Do not wait to strike till the iron is hot, but make it hot by striking.\" - William Butler Yeats"
+      }
+    }
   }
 }

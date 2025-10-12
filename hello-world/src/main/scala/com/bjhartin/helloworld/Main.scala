@@ -54,6 +54,7 @@ object Main extends IOApp {
             |  --quote-94da9e08-63e0-49f1-9324-af68ea81018d Display yet another inspiring famous quote
             |  --quote-b24de4e6-c9a6-479e-b5ea-21ecba9723bc Display yet another inspiring famous quote
             |  --quote-45f3d03a-be14-484b-8737-59e1e9e426c2 Display yet another inspiring famous quote
+            |  --quote-3209f387-e580-4fee-a7c6-6f0869f4ce15 Display yet another inspiring famous quote
             |
             |Examples:
             |  sbt "helloWorld/run"           # Output: Hello, World!
@@ -77,6 +78,7 @@ object Main extends IOApp {
             |  sbt "helloWorld/run --quote-94da9e08-63e0-49f1-9324-af68ea81018d" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-b24de4e6-c9a6-479e-b5ea-21ecba9723bc" # Display yet another famous quote
             |  sbt "helloWorld/run --quote-45f3d03a-be14-484b-8737-59e1e9e426c2" # Display yet another famous quote
+            |  sbt "helloWorld/run --quote-3209f387-e580-4fee-a7c6-6f0869f4ce15" # Display yet another famous quote
             |""".stripMargin
         val helpStream = Stream
           .emit(helpText)
@@ -134,6 +136,9 @@ object Main extends IOApp {
         
       case Some("--quote-45f3d03a-be14-484b-8737-59e1e9e426c2") =>
         printQuote("\"The only limit to our realization of tomorrow will be our doubts of today.\" - Franklin D. Roosevelt")
+        
+      case Some("--quote-3209f387-e580-4fee-a7c6-6f0869f4ce15") =>
+        printQuote("\"Do not wait to strike till the iron is hot, but make it hot by striking.\" - William Butler Yeats")
         
       case _ =>
         val greeting = args.headOption.getOrElse("World")
